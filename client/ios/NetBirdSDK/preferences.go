@@ -1,0 +1,158 @@
+//go:build ios
+
+package NetBirdSDK
+
+import (
+	"github.com/netbirdio/netbird/client/internal/profilemanager"
+)
+
+// Preferences export a subset of the internal config for gomobile
+type Preferences struct {
+	configInput profilemanager.ConfigInput
+}
+
+// NewPreferences create new Preferences instance
+func NewPreferences(configPath string, stateFilePath string) *Preferences {
+	ci := profilemanager.ConfigInput{
+		ConfigPath:    configPath,
+		StateFilePath: stateFilePath,
+	}
+	return &Preferences{ci}
+}
+
+// GetManagementURL read url from config file
+func (p *Preferences) GetManagementURL() (string, error) {
+	if p.configInput.ManagementURL != "" {
+		return p.configInput.ManagementURL, nil
+	}
+
+	cfg, err := profilemanager.ReadConfig(p.configInput.ConfigPath)
+	if err != nil {
+		return "", err
+	}
+	return cfg.ManagementURL.String(), err
+}
+
+// SetManagementURL store the given url and wait for commit
+func (p *Preferences) SetManagementURL(url string) {
+	p.configInput.ManagementURL = url
+}
+
+// GetAdminURL read url from config file
+func (p *Preferences) GetAdminURL() (string, error) {
+	if p.configInput.AdminURL != "" {
+		return p.configInput.AdminURL, nil
+	}
+
+	cfg, err := profilemanager.ReadConfig(p.configInput.ConfigPath)
+	if err != nil {
+		return "", err
+	}
+	return cfg.AdminURL.String(), err
+}
+
+// SetAdminURL store the given url and wait for commit
+func (p *Preferences) SetAdminURL(url string) {
+	p.configInput.AdminURL = url
+}
+
+// GetPreSharedKey read preshared key from config file
+func (p *Preferences) GetPreSharedKey() (string, error) {
+	if p.configInput.PreSharedKey != nil {
+		return *p.configInput.PreSharedKey, nil
+	}
+
+	cfg, err := profilemanager.ReadConfig(p.configInput.ConfigPath)
+	if err != nil {
+		return "", err
+	}
+	return cfg.PreSharedKey, err
+}
+
+// SetPreSharedKey store the given key and wait for commit
+func (p *Preferences) SetPreSharedKey(key string) {
+	p.configInput.PreSharedKey = &key
+}
+
+// SetRosenpassEnabled store if rosenpass is enabled
+func (p *Preferences) SetRosenpassEnabled(enabled bool) {
+	p.configInput.RosenpassEnabled = &enabled
+}
+
+// GetRosenpassEnabled read rosenpass enabled from config file
+func (p *Preferences) GetRosenpassEnabled() (bool, error) {
+	if p.configInput.RosenpassEnabled != nil {
+		return *p.configInput.RosenpassEnabled, nil
+	}
+
+	cfg, err := profilemanager.ReadConfig(p.configInput.ConfigPath)
+	if err != nil {
+		return false, err
+	}
+	return cfg.RosenpassEnabled, err
+}
+
+// SetRosenpassPermissive store the given permissive and wait for commit
+func (p *Preferences) SetRosenpassPermissive(permissive bool) {
+	p.configInput.RosenpassPermissive = &permissive
+}
+
+// GetRosenpassPermissive read rosenpass permissive from config file
+func (p *Preferences) GetRosenpassPermissive() (bool, error) {
+	if p.configInput.RosenpassPermissive != nil {
+		return *p.configInput.RosenpassPermissive, nil
+	}
+
+	cfg, err := profilemanager.ReadConfig(p.configInput.ConfigPath)
+	if err != nil {
+		return false, err
+	}
+	return cfg.RosenpassPermissive, err
+}
+
+// GetDisableIPv6 reads disable IPv6 setting from config file
+func (p *Preferences) GetDisableIPv6() (bool, error) {
+	if p.configInput.DisableIPv6 != nil {
+		return *p.configInput.DisableIPv6, nil
+	}
+
+	cfg, err := profilemanager.ReadConfig(p.configInput.ConfigPath)
+	if err != nil {
+		return false, err
+	}
+	return cfg.DisableIPv6, err
+}
+
+// SetDisableIPv6 stores the given value and waits for commit
+func (p *Preferences) SetDisableIPv6(disable bool) {
+	p.configInput.DisableIPv6 = &disable
+}
+
+// GetRemoteJobsAllowed reads the remote jobs opt-in from config file
+func (p *Preferences) GetRemoteJobsAllowed() (bool, error) {
+	if p.configInput.RemoteJobsAllowed != nil {
+		return *p.configInput.RemoteJobsAllowed, nil
+	}
+
+	cfg, err := profilemanager.ReadConfig(p.configInput.ConfigPath)
+	if err != nil {
+		return false, err
+	}
+	if cfg.RemoteJobsAllowed == nil {
+		return false, nil
+	}
+	return *cfg.RemoteJobsAllowed, err
+}
+
+// SetRemoteJobsAllowed stores the given value and waits for commit
+func (p *Preferences) SetRemoteJobsAllowed(allowed bool) {
+	p.configInput.RemoteJobsAllowed = &allowed
+}
+
+// Commit write out the changes into config file
+func (p *Preferences) Commit() error {
+	// Use DirectUpdateOrCreateConfig to avoid atomic file operations (temp file + rename)
+	// which are blocked by the tvOS sandbox in App Group containers
+	_, err := profilemanager.DirectUpdateOrCreateConfig(p.configInput)
+	return err
+}
